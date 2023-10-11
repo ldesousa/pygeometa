@@ -1,6 +1,6 @@
 Parent,Keyword,Class,DataProperty,ObjectProperty,Range,Notes,
 distribution,,dcat:Dataset,,dcat:distribution,dcat:Distribution,,
-dentification,maintenancefrequency,dcat:Dataset,,dcterms:accrualPeriodicity,dcterms:Frequency,,
+identification,maintenancefrequency,dcat:Dataset,,dcterms:accrualPeriodicity,dcterms:Frequency,,
 extents,spatial,dcat:Dataset,,dcterms:spatial,dcterms:Location,,
 ,,dcat:Dataset,dcat:spatialResolutionInMeters,,xsd:decimal,,
 extents,temporal,dcat:Dataset,,dcterms:temporal,dcterms:PeriodOfTime,,
