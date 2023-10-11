@@ -46,6 +46,9 @@
 import json
 import os
 
+from rdflib import Graph, Literal
+from rdflib.namespace import DCAT, RDF
+
 from pygeometa.helpers import json_serial
 from pygeometa.schemas.base import BaseOutputSchema
 
@@ -64,6 +67,12 @@ class DCATOutputSchema(BaseOutputSchema):
 
         super().__init__('dcat', 'json', THISDIR)
 
+
+    def addDataProperty(instance, dict):
+       
+       return
+
+
     def write(self, mcf: dict) -> str:
         """
         Write outputschema to JSON string buffer
@@ -73,134 +82,38 @@ class DCATOutputSchema(BaseOutputSchema):
         :returns: MCF as a dcat representation
         """
 
-        dcat = {
-            "@context": {
-                # namespaces
-                "adms": "http://www.w3.org/ns/adms#",
-                "dcat": "http://www.w3.org/ns/dcat#",
-                "dct": "http://purl.org/dc/terms/",
-                "foaf": "http://xmlns.com/foaf/0.1/",
-                "gsp": "http://www.opengis.net/ont/geosparql#",
-                "locn": "http://www.w3.org/ns/locn#",
-                "owl": "http://www.w3.org/2002/07/owl#",
-                "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-                "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
-                "schema": "http://schema.org/",
-                "skos": "http://www.w3.org/2004/02/skos/core#",
-                "time": "http://www.w3.org/2006/time",
-                "vcard": "http://www.w3.org/2006/vcard/ns#",
-                "xsd": "http://www.w3.org/2001/XMLSchema#",
-                # mcf-property to dcat mappings
-                "topiccategory": "dcat:theme",
-                "language": "dct:language",
-                # todo: support any range of languages from source
-                "title": "dct:title",
-                "title_en": {"@id": "dct:title", "@language": "en"},
-                "title_fr": {"@id": "dct:title", "@language": "fr"},
-                "abstract_en": {"@id": "dct:description", "@language": "en"},
-                "abstract_fr": {"@id": "dct:description", "@language": "fr"},
-                "distribution": "dcat:distribution",
-                "url": "dcat:accessURL",
-                "name": "dct:title",
-                "name_en": {"@id": "dct:title", "@language": "en"},
-                "name_fr": {"@id": "dct:title", "@language": "fr"},
-                "description": "dct:description",
-                "description_en": {"@id": "dct:description",
-                                   "@language": "en"},
-                "description_fr": {"@id": "dct:description",
-                                   "@language": "fr"},
-                "keywords": "dct:keyword",
-                "keywords_en": {"@id": "dct:keyword", "@language": "en"},
-                "keywords_fr": {"@id": "dct:keyword", "@language": "fr"},
-                "dataseturi": {"@type": "@id", "@id": "@id"},
-                "contact": "dcat:contactPoint",
-                "spatial": "dct:spatial",
-                "temporal": "dct:temporal",
-                "creation": "dct:issued",
-                "modified": "dct:modified",
-                "maintenancefrequency": "dct:accrualPeriodicity",
-                "type": "dcat:mediaType",
-                "size": "dcat:byteSize",
-                "status": "adms:status",
-                "organization": "vcard:hasOrganizationName",
-                "individualname": "vcard:fn",
-                "phone": "vcard:hasTelephone",
-                "address": "vcard:street-address",
-                "city": "vcard:locality",
-                "postalcode": "vcard:postal-code",
-                "country": "vcard:country-name",
-                "email": "vcard:hasEmail",
-                "accessconstraints": "dct:accessRights",
-                "rights": "dct:rights",
-                "rights_en": {"@id": "dct:rights", "@language": "en"},
-                "rights_fr": {"@id": "dct:rights", "@language": "fr"},
-                "bbox": "dcat:bbox",
-                "begin": "dcat:startDate",
-                "end": "dcat:endDate"
-            },
-            "@type": "dcat:Dataset",
-            "keywords": [],
-            "keywords_en": [],
-            "keywords_fr": [],
-            "distribution": [],
-            "contact": []
-        }
+        print("Keys present in dict: " + str(mcf.keys()))
+        print("Keys in mcf: " + str(mcf['mcf'].keys()))
 
-        # prepare mcf for json-ld
-        for key, value in mcf.items():
-            # do nothing for these items (yet)
-            if (key in ['mcf', 'content_info', 'acquisition']):
-                None
-            # unnest these items
-            elif (key in ['metadata', 'identification']):
-                for k, v in value.items():
-                    if (k == 'extents'):
-                        for k1, v1 in v.items():
-                            # assign dct:location type
-                            if (k1 == 'spatial'):
-                                dcat["spatial"] = []
-                                for k2 in v1:
-                                    k2['@type'] = 'dct:Location'
-                                    dcat["spatial"].append(k2)
-                            # assign dct:PeriodOftime type
-                            elif (k1 == 'temporal'):
-                                dcat['temporal'] = []
-                                for k3 in v1:
-                                    k3['@type'] = 'dct:PeriodOfTime'
-                                    dcat["temporal"].append(k3)
-                    # unnest keywords
-                    elif (k == 'keywords'):
-                        for k4, v4 in v.items():
-                            for k5, v5 in v4.items():
-                                if (k5 != 'keywords_type'):
-                                    for kw in v5:
-                                        # assumes a key for language exists
-                                        if k5 in dcat:
-                                            dcat[k5].append(kw)
-                    elif (k in ['identifier']):
-                        # mint a url from identifier if non exists on mcf
-                        if (not mcf['metadata']['dataseturi']):
-                            dcat['dataseturi'] = 'http://example.com/#' + \
-                                str(v)
-                    elif (k in ['dates']):
-                        for k6, v6 in v.items():
-                            dcat[k6] = v6
-                    else:
-                        dcat[k] = v
-            # transform set of keys to array
-            elif (key in ['distributor', 'contact']):
-                for k, v in value.items():
-                    # add id (if url exists)
-                    if (not isinstance(v, str) and v['url']):
-                        v['@id'] = v['url']
-                    # add type
-                    if (key == 'distribution'):
-                        v['@type'] = 'dcat:Distribution'
-                    else:
-                        v['@type'] = 'vcard:Organization'
-                    dcat[key].append(v)
-            # other cases: root properties
+        print(str(mcf["identification"]["abstract"]))
+        print(str(mcf["identification"]["title"]))
+        #print(str(mcf["identification"]["doi"]))
+        print(str(mcf["identification"]["keywords"]))
+        print(str(mcf["identification"]["url"]))
+        #print(str(mcf["identification"]["language"]))
+
+        # Read in CSV map
+        w3c = pandas.read_csv('MapW3C.csv')
+
+        # Next:
+        # https://rdflib.readthedocs.io/en/stable/intro_to_creating_rdf.html    
+        grph = Graph()
+
+        grph.add((mcf["metadata"]["dataseturi"], RDF.type, DCAT.Dataset ))
+
+        for key in mcf["metadata"]:
+            node = mcf["metadata"][key]
+            if node is dict:
+                print("Key to dictionary: " + str(mcf[key]))
             else:
-                dcat[key] = value
+                row = w3c.loc[df["Parent"] == key]
+                if row != None:
+                      if row["DataProperty"] != None:
+                        ont, prop = row["DataProperty"].split(":")
+                      prop = URIRef()
+                      type_uri = URIRef()
+                      lit = Literal(node, datatype=type_uri) 
+                      grph.add((mcf["metadata"]["dataseturi"], prop ,lit))
 
-        return json.dumps(dcat, default=json_serial, indent=4)
+        print(grph.serialize())
+
